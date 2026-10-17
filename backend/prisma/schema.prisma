@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String    @id @default(cuid())
+  fullName             String
+  email                String    @unique
+  phone                String?
+  passwordHash         String
+  balance              Float     @default(1000)
+  twoFactorEnabled     Boolean   @default(false)
+  twoFactorSecret      String?
+  failedLoginAttempts  Int       @default(0)
+  lockUntil            DateTime?
+  loginOtpHash         String?
+  loginOtpExpires      DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  sessions             Session[]
+  loginActivities      LoginActivity[]
+  transactions         Transaction[]
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String
+  amount      Float
+  balanceAfter Float
+  note        String?
+  counterparty String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String
+  deviceName   String?
+  browser      String?
+  os           String?
+  ipAddress    String?
+  userAgent    String?
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  revokedAt    DateTime?
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model LoginActivity {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  success   Boolean
+  reason    String?
+  ipAddress String?
+  userAgent String?
+  deviceName String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
